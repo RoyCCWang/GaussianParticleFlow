@@ -1,1 +1,1 @@
-# GaussianFlowIS
+# GaussianParticleFlow
