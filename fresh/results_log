@@ -1,0 +1,31 @@
+results log
+
+
+# computed value is:
+# NI: 𝔼[f] over posterior   = 1.3489336018075437
+# val_h = 0.02186045790028874
+
+# run 3 times for all.
+
+# GF2
+~35 sec.
+N_discretizations = 1000
+γ = 0.0
+N_particles = 2000
+GF: 𝔼[f] over posterior   = 1.258345904404025
+GF: 𝔼[f] over posterior   = 1.2599921128553293
+GF: 𝔼[f] over posterior   = 1.2471985946288684
+GF: 𝔼[f] over posterior   = 1.2804074028604788
+GF: 𝔼[f] over posterior   = 1.375280414368807
+
+
+# GF2
+~344 sec.
+N_discretizations = 10000
+γ = 0.0
+N_particles = 2000
+GF: 𝔼[f] over posterior   = 1.298842483754107
+GF: 𝔼[f] over posterior   = 1.3310315626285867
+
+The computed ESS is kind of off. Shows that the weight is not very accurate.
+I suspect it is worse for non-invertible ψ.
