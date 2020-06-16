@@ -10,12 +10,6 @@ function computePquantitiesL1(x, λ, ψ, σ²)
 
     inv_P_λ_x = (1/σ²)*LinearAlgebra.I + (λ/σ²)*u*u'
 
-    # # WIP.
-    # K = 1.234
-    # Q = LinearAlgebra.I + K .* u*u'
-    #
-    # x = ( sqrt(1+dot(u,u)*K)-1 )/dot(u,u)
-    # sqrt_Q = LinearAlgebra.I + x .* u*u'
 
     return P_λ_x, inv_P_λ_x#, Q, sqrt_Q
 end
@@ -23,7 +17,7 @@ end
 # define 𝑃1 := sqrt( P_λ1*inv(P_λ0) ) at x_λ0.
 # x is x_λ0 in this function.
 # ψ: ℝᴰ → ℝ here; a scalar-valued function.
-function compute𝐺(x, λ0, λ1::T, ψ, σ²) where T
+function compute𝐺(x::Vector{T}, λ0, λ1, ψ, σ²) where T
     D = length(x)
 
     dψ_x = ForwardDiff.gradient(ψ, x)
@@ -79,6 +73,7 @@ function compute𝐺(x, λ0, λ1::T, ψ, σ²) where T
 
     return 𝐺, d𝐺
 end
+
 
 
 # function compute𝑚old(x, z_input, λ::T, ψ, σ², y) where T
@@ -143,7 +138,7 @@ end
 #     return 𝑚, d𝑚
 # end
 
-function compute𝑚(x, z_input, λ, ψ, σ², y) where T
+function compute𝑚(x, z_input, λ, ψ, σ², y)
     D = length(x)
     @assert length(z_input) == D
 
@@ -223,78 +218,11 @@ function evalduuᵀ(dψ_x::Vector{T}, d2ψ_x::Matrix{T}, i, j, l)::T where T
 end
 
 
-# Let P := P_λ(x). This is the general case as reported by Bunch's eqn 18.
-# Compute via eqn 18: P, inv(P), and sqrt(Q), where Q := P*inv(P).
-function computePquantitiesBunch(x, λ, ψ, inv_P0, inv_R)
-
-    H = ForwardDiff.jacobian(ψ, x)
-
-    inv_P_λ_x = inv_P0 + λ*H'*inv_R*H
-
-    P_λ_x = inv(inv_P_λ_x)
-
-    return P_λ_x, inv_P_λ_x#, Q, sqrt_Q
-end
-
-
-# define 𝑃1 := sqrt( P_λ1*inv(P_λ0) ) at x_λ0.
-# x is x_λ0 in this function.
-# ψ: ℝᴰ → ℝᴸ here; a vector-valued function, even if L == 1.
-function compute𝐺Bunch(x, λ0, λ1, ψ, inv_P0, inv_R)
-
-    H = ForwardDiff.jacobian(ψ, x)
-
-    inv_P_λ1_x = inv_P0 + λ1*H'*inv_R*H
-    P_λ1_x = inv(inv_P_λ1_x)
-
-    inv_P_λ0_x = inv_P0 + λ0*H'*inv_R*H
-
-    # println(" P_λ1_x*inv_P_λ0_x = ",  P_λ1_x*inv_P_λ0_x)
-    𝐺 = sqrt( P_λ1_x*inv_P_λ0_x )
-
-    # return 𝐺
-
-    𝐺_real = real.(𝐺)
-
-    return 𝐺_real
-end
-
-# Use numerical differentiation to compute df, where f: ℝᴰ → ℝ^{MxN}.
-function computegradientformatrixfunctionND(x::Vector{T}, f, M, N) where T
-    D = length(x)
-
-    df = Matrix{Vector{T}}(undef, M, N)
-
-    for j = 1:N
-        for i = 1:M
-
-            h = xx->f(xx)[i,j]
-
-            df[i,j] = Calculus.gradient(h, x)
-        end
-    end
-
-    return df
-end
-
-
-
 
 ####
 
 # m0 is z_input in the GFAK setting.
-function compute𝑚Bunch(x, λ, ψ, m0, inv_P0, inv_R, y)
 
-    H = ForwardDiff.jacobian(ψ, x)
-    y_hat = y - ψ(x) + H*x
-
-    inv_P_λ_x = inv_P0 + λ*H'*inv_R*H
-    P_λ_x = inv(inv_P_λ_x)
-
-    𝑚 = P_λ_x*( inv_P0*m0 + λ*H'*inv_R*y_hat )
-
-    return 𝑚
-end
 
 function computeyhatL1(x, ψ, y)
 
@@ -382,45 +310,55 @@ function computedκ(x, z_input, λ::T, ψ, σ², y) where T
     return dκ
 end
 
-# function computed𝑚Bunch(x, λ::T, ψ, m0, inv_P0, inv_R, y) where T
-#
-#     H = ForwardDiff.jacobian(ψ, x)
-#     y_hat = y - ψ(x) + H*x
-#
-#     inv_P_λ_x = inv_P0 + λ*H'*inv_R*H
-#     P_λ_x = inv(inv_P_λ_x)
-#
-#     𝑚 = P_λ_x*( inv_P0*m0 + λ*H'*inv_R*y_hat )
-#
-#     # I am here. construct αH.
-#     L = length(y)
-#     D = length(x)
-#
-#     dH_x = collect( Matrix{T}(undef, D, D) for j = 1:D )
-#
-#
-#     for i = 1:L
-#
-#         f = xx->ψ(xx)[i]
-#         d2f_x = ForwardDiff.hessian(f, x)
-#
-#         for j = 1:D
-#             for k = 1:D
-#
-#                 dH_x[j][i,k] = d2f_x[j,k]
-#             end
-#         end
-#     end
-#
-#     for j = 1:D
-#         ### I am here.
-#         println("size(dH_x[j]) = ", size(dH_x[j]))
-#
-#         term1 = λ*P_λ_x*(dH_x[j]'*inv_R*(y_hat-H*𝑚))
-#         term2 = H'*inv_R*dH_x[j]*(x-𝑚)
-#
-#         d𝑚[j] = term1 + term2
-#     end
-#
-#     return d𝑚
-# end
+#### state update.
+
+function computestateupdate(x, λ0, λ1, ψ, z_input, σ², y)
+
+    m_λ1 = compute𝑚(x, z_input, λ1, ψ, σ², y)
+    m_λ0 = compute𝑚(x, z_input, λ0, ψ, σ², y)
+
+    G, dG = compute𝐺(x, λ0, λ1, ψ, σ²)
+
+    #γ = 0
+    #β_γ = exp(-0.5*γ*(λ1-λ0))
+
+    return m_λ1 + G*(x-m_λ0)
+end
+
+function computedx1L1(x, λ0, λ1::T, ψ, z_input, σ², y) where T
+    D = length(x)
+
+    m_λ1 = compute𝑚(x, z_input, λ1, ψ, σ², y)
+    m_λ0 = compute𝑚(x, z_input, λ0, ψ, σ², y)
+
+    G, dG = compute𝐺(x, λ0, λ1, ψ, σ²)
+
+    #γ = 0
+    #β_γ = exp(-0.5*γ*(λ1-λ0))
+
+    dm_λ0 = computed𝑚(x, z_input, λ0, ψ, σ², y)
+    dm_λ1 = computed𝑚(x, z_input, λ1, ψ, σ², y)
+
+    dm_λ0_mat = convertnestedvector(dm_λ0)
+    A = G*( LinearAlgebra.I - dm_λ0_mat )
+
+    C = Matrix{T}(undef, D, D)
+    for l = 1:D
+        for i = 1:D
+
+            C[i,l] = zero(T)
+            for j = 1:D
+                C[i,l] += dG[i,j][l]*( x[j] - m_λ0[j] )
+            end
+        end
+    end
+
+    dx1 = Matrix{T}(undef, D, D)
+    for l = 1:D
+        for i = 1:D
+            dx1[i,l] = dm_λ1[l][i] + A[i,l] + C[i,l]
+        end
+    end
+
+    return dx1
+end
