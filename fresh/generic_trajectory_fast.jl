@@ -129,32 +129,32 @@ N_discretizations = 1000
 
 x = rand(prior_dist)
 
-# println("old: traversesdepathapproxflow")
-# Random.seed!(25)
-# problem_params,
-#     problem_methods,
-#     GF_buffers,
-#     GF_config = setupGFquantities( γ,
-#                             m_0,
-#                             P_0,
-#                             R,
-#                             y,
-#                             ψ,
-#                             ∂ψ,
-#                             ∂2ψ,
-#                             ln_prior_pdf_func,
-#                             ln_likelihood_func)
-#
+println("old: traversesdepathapproxflow")
+Random.seed!(25)
+problem_params,
+    problem_methods,
+    GF_buffers,
+    GF_config = setupGFquantities( γ,
+                            m_0,
+                            P_0,
+                            R,
+                            y,
+                            ψ,
+                            ∂ψ,
+                            ∂2ψ,
+                            ln_prior_pdf_func,
+                            ln_likelihood_func)
+
 λ_array, Bλ_array = drawBrownianmotiontrajectorieswithoutstart(N_discretizations, D_x);
 #
 #
-# @time 𝑥, 𝑤 = traversesdepathapproxflow(   x,
-#                                  λ_array,
-#                                  Bλ_array,
-#                                  problem_params,
-#                                  problem_methods,
-#                                  GF_buffers,
-#                                  GF_config)
+@time 𝑥, 𝑤 = traversesdepathapproxflow(   x,
+                                 λ_array,
+                                 Bλ_array,
+                                 problem_params,
+                                 problem_methods,
+                                 GF_buffers,
+                                 GF_config)
 
 #
 println("new: traversesdepathapproxflow")
@@ -174,20 +174,22 @@ problem_params,
                             ln_prior_pdf_func,
                             ln_likelihood_func)
 
-𝑥2, 𝑤2 = traversesdepathapproxflow2( x,
+@time 𝑥2, 𝑤2 = traversesdepathapproxflow2( x,
                                     λ_array,
                                     problem_params,
                                     problem_methods,
                                     GF_buffers,
                                     GF_config)
 #
-# ## compare.
-# discrepancy_x = norm(𝑥2-𝑥)
-# discrepancy_w = norm(𝑤2-𝑤)
-#
-# println("discrepancy_x = ", discrepancy_x)
-# println("discrepancy_w = ", discrepancy_w)
-# println()
+## compare.
+discrepancy_x = norm(𝑥2-𝑥)
+discrepancy_w = norm(𝑤2-𝑤)
+
+println("discrepancy_x = ", discrepancy_x)
+println("discrepancy_w = ", discrepancy_w)
+println()
+
+@assert 1==2
 
 println("traversegflow")
 𝑥3, 𝑚, 𝑃 = traversegflow( x,
