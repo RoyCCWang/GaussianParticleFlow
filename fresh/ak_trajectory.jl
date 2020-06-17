@@ -54,6 +54,7 @@ import VisualizationTools
 @everywhere include("./adaptive_kernel/scalar.jl")
 @everywhere include("./adaptive_kernel/traverse.jl")
 
+@everywhere include("./adaptive_kernel/state_update.jl")
 @everywhere include("../tests/routines/L1_moments.jl")
 @everywhere include("../tests/routines/Bunch_updates.jl")
 
@@ -80,8 +81,10 @@ max_integral_evals = typemax(Int) #1000000
 initial_div = 1000
 
 
-
+#D_x = 100 # 12 seconds.
 D_x = 6
+#D_x = 30 # 8.5 ms.
+
 θ_a = rand()
 
 A_ϕ = randn(D_x, D_x)
@@ -107,8 +110,7 @@ prior_dist = Distributions.MvNormal(m_0, P_0)
 ln_prior_pdf_func = xx->Distributions.logpdf(prior_dist, xx)
 ln_likelihood_func = xx->evallnMVNlikelihood(xx, y, m_0, P_0, ψ, R)
 
-inv_P0 = diagm(1/σ² * ones(Float64, D_x))
-inv_R = diagm(1/σ² * ones(Float64, L))
+
 
 
 ###### verify moment expressions. pakage into test script when done.
@@ -120,6 +122,9 @@ x0 = randn(D_x)
 
 ψ_scalar = xx->ψ(xx)[1]
 y_scalar = y[1]
+
+inv_P0 = diagm(1/σ² * ones(Float64, D_x))
+inv_R = diagm(1/σ² * ones(Float64, L))
 
 ### verify state update.
 
@@ -133,13 +138,25 @@ x1 = x1_func(x0)
 dx1_func_AD = xx->ForwardDiff.jacobian(x1_func, xx)
 dx1_func = xx->computedx1L1(xx, λ0, λ1, ψ_scalar, z_input, σ², y_scalar)
 
+dx1_func2 = xx->updatesL1(xx, λ0, λ1, ψ_scalar, z_input, σ², y_scalar)
+
+
+
 dx1_x0_AD = dx1_func_AD(x0)
-dx1_x0 = dx1_func(x0)
+#dx1_x0 = dx1_func(x0)
+dx1_x0 = dx1_func2(x0)
+
 
 println("verify 𝑚 formula.")
 println("x1, L = 1: l-2 discrepancy between my formula and Bunch is  ", norm(x1_Bunch-x1))
 println("dx1, L = 1: l-2 discrepancy between my formula and Bunch is  ", norm(dx1_x0_AD-dx1_x0))
 println()
+
+using BenchmarkTools
+
+# I am here. pre-allocate buffers.
+#dG, dx, x1, r,  = setupupdatebuffers(x0)
+@btime dx1_func2(x0)
 
 @assert 1==222
 

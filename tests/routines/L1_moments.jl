@@ -361,4 +361,5 @@ function computedx1L1(x, λ0, λ1::T, ψ, z_input, σ², y) where T
     end
 
     return dx1
+    #return A # debug.
 end
